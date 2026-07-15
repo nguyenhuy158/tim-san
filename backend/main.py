@@ -33,7 +33,7 @@ async def health() -> dict[str, str]:
 async def search(
     q: str = Query("", alias="query"),
     sport: str = "",
-    on: date | None = Query(None),
+    on: date | None = Query(None, alias="date"),
     start_time: str = "",
 ) -> dict[str, Any]:
     """Return local cache results; live upstream sync can be added here safely."""

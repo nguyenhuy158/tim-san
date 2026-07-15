@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type Court = {
   id: string;
@@ -80,8 +80,18 @@ export default function Home() {
   const [time, setTime] = useState("19:00");
   const [searched, setSearched] = useState(true);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [apiResults, setApiResults] = useState<Court[] | null>(null);
 
-  const results = useMemo(() => {
+  useEffect(() => {
+    if (!apiBase) return;
+    const params = new URLSearchParams({ query, date, sport, start_time: time });
+    fetch(`${apiBase}/api/search?${params}`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("API unavailable")))
+      .then((payload: { results?: Court[] }) => setApiResults(payload.results ?? []))
+      .catch(() => setApiResults(null));
+  }, [query, date, sport, time]);
+
+  const localResults = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return COURTS.filter((court) => {
       const matchesQuery = !normalized || `${court.name} ${court.address}`.toLowerCase().includes(normalized);
@@ -89,6 +99,7 @@ export default function Home() {
       return matchesQuery && matchesSport;
     });
   }, [query, sport]);
+  const results = apiResults ?? localResults;
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
