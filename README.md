@@ -11,9 +11,9 @@ khung giờ còn trống.
 ## Frontend
 
 ```bash
-npm install
-npm run dev
-npm run build
+pnpm install
+pnpm run dev
+pnpm run build
 ```
 
 Chạy cả frontend và backend bằng một lệnh:
@@ -37,7 +37,7 @@ uvicorn main:app --reload --port 8000
 Frontend có thể trỏ vào backend bằng biến môi trường:
 
 ```bash
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 npm run dev
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 pnpm run dev
 ```
 
 Backend giữ lớp proxy cho API ALO Booking. Các endpoint lịch upstream đã được
@@ -116,10 +116,10 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 ## Useful Commands
 
 - `make dev-all`: start frontend and backend together
-- `npm run dev`: start local frontend only
-- `npm run build`: verify the vinext build output
-- `npm test`: build and verify the finder page
-- `npm run db:generate`: generate Drizzle migrations after schema changes
+- `pnpm run dev`: start local frontend only
+- `pnpm run build`: verify the vinext build output
+- `pnpm test`: build and verify the finder page
+- `pnpm run db:generate`: generate Drizzle migrations after schema changes
 
 ## Learn More
 

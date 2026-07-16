@@ -17,7 +17,7 @@ help:
 	@printf "tim-san commands\n\n"
 	@printf "Setup:\n"
 	@printf "  make setup          Install frontend and backend dependencies\n"
-	@printf "  make install        Install frontend dependencies with npm ci\n"
+	@printf "  make install        Install frontend dependencies with pnpm install\n"
 	@printf "  make backend-setup  Create backend venv and install requirements\n\n"
 	@printf "Development:\n"
 	@printf "  make dev            Run frontend with NEXT_PUBLIC_API_BASE_URL\n"
@@ -38,7 +38,7 @@ help:
 
 .PHONY: install
 install:
-	npm ci
+	pnpm install
 
 .PHONY: backend-setup
 backend-setup:
@@ -51,7 +51,7 @@ setup: install backend-setup
 
 .PHONY: dev frontend-dev
 dev frontend-dev:
-	NEXT_PUBLIC_API_BASE_URL=$(API_BASE_URL) npm run dev
+	NEXT_PUBLIC_API_BASE_URL=$(API_BASE_URL) pnpm run dev
 
 .PHONY: backend-dev
 backend-dev: backend-setup
@@ -61,7 +61,7 @@ backend-dev: backend-setup
 dev-all: backend-setup
 	@trap 'kill 0' INT TERM EXIT; \
 	(cd backend && .venv/bin/uvicorn main:app --reload --port $(API_PORT)) & \
-	NEXT_PUBLIC_API_BASE_URL=$(API_BASE_URL) npm run dev & \
+	NEXT_PUBLIC_API_BASE_URL=$(API_BASE_URL) pnpm run dev & \
 	wait
 
 .PHONY: backend-health
@@ -71,26 +71,26 @@ backend-health:
 
 .PHONY: build
 build:
-	npm run build
+	pnpm run build
 
 .PHONY: start
 start:
-	NEXT_PUBLIC_API_BASE_URL=$(API_BASE_URL) npm run start
+	NEXT_PUBLIC_API_BASE_URL=$(API_BASE_URL) pnpm run start
 
 .PHONY: lint
 lint:
-	npm run lint
+	pnpm run lint
 
 .PHONY: test
 test:
-	npm test
+	pnpm test
 
 .PHONY: check
 check: lint test
 
 .PHONY: db-generate
 db-generate:
-	npm run db:generate
+	pnpm run db:generate
 
 .PHONY: clean
 clean:

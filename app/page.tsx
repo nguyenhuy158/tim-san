@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import * as Select from "@radix-ui/react-select";
 
 type Court = {
   id: string;
@@ -79,6 +80,20 @@ const FILTER_OPTIONS = [
   { id: "time-18-20", label: "18:00–20:00", group: "time" },
   { id: "weekdays", label: "Thứ 2–Thứ 6", group: "days" },
 ];
+
+function Dropdown({ value, onValueChange, options, labels }: { value: string; onValueChange: (value: string) => void; options: string[]; labels?: Record<string, string> }) {
+  return <Select.Root value={value} onValueChange={onValueChange}>
+    <Select.Trigger className="select-trigger" aria-label="Chọn giá trị">
+      <Select.Value>{labels?.[value] ?? value}</Select.Value>
+      <Select.Icon className="select-chevron">⌄</Select.Icon>
+    </Select.Trigger>
+    <Select.Portal>
+      <Select.Content className="select-content" position="popper" sideOffset={6}>
+        <Select.Viewport className="select-viewport">{options.map((option) => <Select.Item className="select-item" value={option} key={option}><Select.ItemText>{labels?.[option] ?? option}</Select.ItemText><Select.ItemIndicator>✓</Select.ItemIndicator></Select.Item>)}</Select.Viewport>
+      </Select.Content>
+    </Select.Portal>
+  </Select.Root>;
+}
 
 export default function Home() {
   const [query, setQuery] = useState("Bình Trưng");
@@ -202,11 +217,11 @@ export default function Home() {
           </label>
           <label className="field">
             <span>Bán kính tìm</span>
-            <div className="input-wrap"><span className="input-icon">◎</span><select value={radiusKm} onChange={(event) => setRadiusKm(event.target.value)}><option value="5">Trong 5 km</option><option value="10">Trong 10 km</option><option value="20">Trong 20 km</option><option value="50">Trong 50 km</option></select></div>
+            <div className="input-wrap"><span className="input-icon">◎</span><Dropdown value={radiusKm} onValueChange={setRadiusKm} options={["5", "10", "20", "50"]} labels={{ "5": "Trong 5 km", "10": "Trong 10 km", "20": "Trong 20 km", "50": "Trong 50 km" }} /></div>
           </label>
           <label className="field">
             <span>Môn thể thao</span>
-            <div className="input-wrap"><span className="input-icon">◉</span><select value={sport} onChange={(event) => setSport(event.target.value)}><option>Tất cả môn</option><option>Pickleball</option><option>Cầu lông</option></select></div>
+            <div className="input-wrap"><span className="input-icon">◉</span><Dropdown value={sport} onValueChange={setSport} options={["Tất cả môn", "Pickleball", "Cầu lông"]} /></div>
           </label>
           <label className="field">
             <span>Giờ bắt đầu</span>
