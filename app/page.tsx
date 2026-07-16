@@ -78,27 +78,35 @@ export default function Home() {
   const [date, setDate] = useState("2026-07-15");
   const [sport, setSport] = useState("Tất cả môn");
   const [time, setTime] = useState("19:00");
+  const [endTime, setEndTime] = useState("20:00");
+  const [weekdayPreset, setWeekdayPreset] = useState("");
   const [searched, setSearched] = useState(true);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [apiResults, setApiResults] = useState<Court[] | null>(null);
 
   useEffect(() => {
     if (!apiBase) return;
-    const params = new URLSearchParams({ query, date, sport, start_time: time });
+    const params = new URLSearchParams({ query, date, sport, start_time: time, end_time: endTime });
     fetch(`${apiBase}/api/search?${params}`)
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("API unavailable")))
       .then((payload: { results?: Court[] }) => setApiResults(payload.results ?? []))
       .catch(() => setApiResults(null));
-  }, [query, date, sport, time]);
+  }, [query, date, sport, time, endTime]);
 
   const localResults = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return COURTS.filter((court) => {
       const matchesQuery = !normalized || `${court.name} ${court.address}`.toLowerCase().includes(normalized);
       const matchesSport = sport === "Tất cả môn" || court.sport === sport;
-      return matchesQuery && matchesSport;
+      const start = Number(time.replace(":", ""));
+      const end = Number(endTime.replace(":", ""));
+      const hasSlot = !weekdayPreset || court.available.some((slot) => {
+        const value = Number(slot.replace(":", ""));
+        return value >= start && value <= end;
+      });
+      return matchesQuery && matchesSport && hasSlot;
     });
-  }, [query, sport]);
+  }, [query, sport, time, endTime, weekdayPreset]);
   const results = apiResults ?? localResults;
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -108,6 +116,13 @@ export default function Home() {
 
   function toggleFavorite(id: string) {
     setFavoriteIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  }
+
+  function applyWeekdayPreset(nextEndTime: string) {
+    setSport("Cầu lông");
+    setTime("18:00");
+    setEndTime(nextEndTime);
+    setWeekdayPreset(nextEndTime);
   }
 
   return (
@@ -146,7 +161,8 @@ export default function Home() {
           </label>
           <button className="search-button" type="submit"><span>⌕</span> Tìm sân</button>
         </form>
-        <div className="quick-filters"><span>Lọc nhanh</span><button type="button" onClick={() => setSport("Pickleball")}>Pickleball</button><button type="button" onClick={() => setSport("Cầu lông")}>Cầu lông</button><button type="button" onClick={() => setSport("Tất cả môn")}>Tất cả</button></div>
+        <div className="quick-filters"><span>Lọc nhanh</span><button type="button" onClick={() => { setSport("Pickleball"); setWeekdayPreset(""); }}>Pickleball</button><button type="button" onClick={() => { setSport("Cầu lông"); setWeekdayPreset(""); }}>Cầu lông</button><button type="button" onClick={() => { setSport("Tất cả môn"); setWeekdayPreset(""); }}>Tất cả</button></div>
+        <div className="preset-row"><span className="preset-label">Preset hay dùng</span><button type="button" className={`preset ${weekdayPreset === "19:00" ? "preset-active" : ""}`} onClick={() => applyWeekdayPreset("19:00")}><span>🏸</span> Cầu lông · 18:00–19:00 <small>T2–T6</small></button><button type="button" className={`preset ${weekdayPreset === "20:00" ? "preset-active" : ""}`} onClick={() => applyWeekdayPreset("20:00")}><span>🏸</span> Cầu lông · 18:00–20:00 <small>T2–T6</small></button></div>
       </section>
 
       <section className="results-section">
@@ -159,7 +175,7 @@ export default function Home() {
             const isFavorite = favoriteIds.includes(court.id);
             return <article className="court-card" key={court.id}>
               <div className={`court-visual ${court.accent}`}><span className="sport-badge">{court.sport}</span><button className={`favorite ${isFavorite ? "is-favorite" : ""}`} onClick={() => toggleFavorite(court.id)} aria-label={isFavorite ? "Bỏ yêu thích" : "Thêm yêu thích"}>{isFavorite ? "♥" : "♡"}</button><div className="visual-lines" /><span className="visual-index">0{results.indexOf(court) + 1}</span></div>
-              <div className="court-content"><div className="court-title-row"><div><h3>{court.name}</h3><p className="address">{court.address}</p></div><span className="rating">★ {court.rating.toFixed(1)}</span></div><div className="court-meta"><span>◷ {court.open} – {court.close}</span><span>⌖ {court.distanceKm.toFixed(1)} km</span></div><div className="slot-row"><span className="slot-label">Còn trống</span>{court.available.slice(0, 3).map((slot) => <button className={`slot ${slot === time ? "slot-selected" : ""}`} key={slot} onClick={() => setTime(slot)}>{slot}</button>)}<span className="more-slots">+{court.available.length - 3}</span></div><button className="book-button" type="button">Xem lịch sân <span>↗</span></button></div>
+              <div className="court-content"><div className="court-title-row"><div><h3>{court.name}</h3><p className="address">{court.address}</p></div><span className="rating">★ {court.rating.toFixed(1)}</span></div><div className="court-meta"><span>◷ {court.open} – {court.close}</span><span>⌖ {court.distanceKm.toFixed(1)} km</span></div><div className="slot-row"><span className="slot-label">Còn trống</span>{court.available.filter((slot) => { if (!weekdayPreset) return true; const value = Number(slot.replace(":", "")); return value >= Number(time.replace(":", "")) && value <= Number(endTime.replace(":", "")); }).slice(0, 3).map((slot) => <button className={`slot ${slot === time ? "slot-selected" : ""}`} key={slot} onClick={() => setTime(slot)}>{slot}</button>)}<span className="more-slots">{weekdayPreset ? "T2–T6" : `+${Math.max(0, court.available.length - 3)}`}</span></div><button className="book-button" type="button">Xem lịch sân <span>↗</span></button></div>
             </article>;
           })}
         </div>

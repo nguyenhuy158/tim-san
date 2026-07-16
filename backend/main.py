@@ -35,6 +35,7 @@ async def search(
     sport: str = "",
     on: date | None = Query(None, alias="date"),
     start_time: str = "",
+    end_time: str = "",
 ) -> dict[str, Any]:
     """Return local cache results; live upstream sync can be added here safely."""
     normalized = q.strip().casefold()
@@ -43,7 +44,7 @@ async def search(
         if (not normalized or normalized in f"{court['name']} {court['address']}".casefold())
         and (not sport or sport == "Tất cả môn" or court["sport"] == sport)
     ]
-    return {"query": q, "date": str(on) if on else None, "startTime": start_time, "count": len(matches), "results": matches, "source": "cache"}
+    return {"query": q, "date": str(on) if on else None, "startTime": start_time, "endTime": end_time, "count": len(matches), "results": matches, "source": "cache"}
 
 
 @app.get("/api/upstream/branch/{branch_id}/schedule")
