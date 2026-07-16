@@ -72,6 +72,13 @@ const COURTS: Court[] = [
 ];
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+const FILTER_OPTIONS = [
+  { id: "badminton", label: "Cầu lông", group: "sport" },
+  { id: "pickleball", label: "Pickleball", group: "sport" },
+  { id: "time-18-19", label: "18:00–19:00", group: "time" },
+  { id: "time-18-20", label: "18:00–20:00", group: "time" },
+  { id: "weekdays", label: "Thứ 2–Thứ 6", group: "days" },
+];
 
 export default function Home() {
   const [query, setQuery] = useState("Bình Trưng");
@@ -80,6 +87,12 @@ export default function Home() {
   const [time, setTime] = useState("19:00");
   const [endTime, setEndTime] = useState("20:00");
   const [weekdayPreset, setWeekdayPreset] = useState("");
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [savedFilters, setSavedFilters] = useState<string[][]>(() => {
+    if (typeof window === "undefined") return [];
+    const stored = window.localStorage.getItem("tim-san-saved-filters");
+    return stored ? JSON.parse(stored) : [];
+  });
   const [searched, setSearched] = useState(true);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [apiResults, setApiResults] = useState<Court[] | null>(null);
@@ -98,15 +111,16 @@ export default function Home() {
     return COURTS.filter((court) => {
       const matchesQuery = !normalized || `${court.name} ${court.address}`.toLowerCase().includes(normalized);
       const matchesSport = sport === "Tất cả môn" || court.sport === sport;
+      const rangeSelected = selectedFilters.some((item) => item.startsWith("time-"));
       const start = Number(time.replace(":", ""));
       const end = Number(endTime.replace(":", ""));
-      const hasSlot = !weekdayPreset || court.available.some((slot) => {
+      const hasSlot = !rangeSelected || court.available.some((slot) => {
         const value = Number(slot.replace(":", ""));
         return value >= start && value <= end;
       });
       return matchesQuery && matchesSport && hasSlot;
     });
-  }, [query, sport, time, endTime, weekdayPreset]);
+  }, [query, sport, time, endTime, selectedFilters]);
   const results = apiResults ?? localResults;
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -123,6 +137,40 @@ export default function Home() {
     setTime("18:00");
     setEndTime(nextEndTime);
     setWeekdayPreset(nextEndTime);
+    setSelectedFilters(["badminton", nextEndTime === "19:00" ? "time-18-19" : "time-18-20", "weekdays"]);
+  }
+
+  function applySavedFilter(filter: string[]) {
+    setSelectedFilters(filter);
+    const hasBadminton = filter.includes("badminton");
+    const hasPickleball = filter.includes("pickleball");
+    const range = filter.includes("time-18-19") ? "19:00" : filter.includes("time-18-20") ? "20:00" : "";
+    setSport(hasBadminton ? "Cầu lông" : hasPickleball ? "Pickleball" : "Tất cả môn");
+    if (range) { setTime("18:00"); setEndTime(range); }
+    setWeekdayPreset(filter.includes("weekdays") ? range : "");
+  }
+
+  function toggleFilter(id: string) {
+    const option = FILTER_OPTIONS.find((item) => item.id === id);
+    if (!option) return;
+    setSelectedFilters((current) => {
+      const next = current.includes(id) ? current.filter((item) => item !== id) : [...current.filter((item) => FILTER_OPTIONS.find((filter) => filter.id === item)?.group !== option.group), id];
+      if (id === "badminton") setSport("Cầu lông");
+      if (id === "pickleball") setSport("Pickleball");
+      if (id.startsWith("time-")) {
+        setTime("18:00");
+        setEndTime(id === "time-18-19" ? "19:00" : "20:00");
+      }
+      setWeekdayPreset(next.includes("weekdays") ? (next.includes("time-18-19") ? "19:00" : next.includes("time-18-20") ? "20:00" : "") : "");
+      return next;
+    });
+  }
+
+  function saveCurrentFilter() {
+    if (!selectedFilters.length) return;
+    const next = [...savedFilters.filter((item) => item.join(",") !== selectedFilters.join(",")), selectedFilters];
+    setSavedFilters(next);
+    window.localStorage.setItem("tim-san-saved-filters", JSON.stringify(next));
   }
 
   return (
@@ -162,6 +210,8 @@ export default function Home() {
           <button className="search-button" type="submit"><span>⌕</span> Tìm sân</button>
         </form>
         <div className="quick-filters"><span>Lọc nhanh</span><button type="button" onClick={() => { setSport("Pickleball"); setWeekdayPreset(""); }}>Pickleball</button><button type="button" onClick={() => { setSport("Cầu lông"); setWeekdayPreset(""); }}>Cầu lông</button><button type="button" onClick={() => { setSport("Tất cả môn"); setWeekdayPreset(""); }}>Tất cả</button></div>
+        <div className="filter-ticks"><span className="preset-label">Bộ lọc</span>{FILTER_OPTIONS.map((option) => <label className={`tick-filter ${selectedFilters.includes(option.id) ? "tick-active" : ""}`} key={option.id}><input type="checkbox" checked={selectedFilters.includes(option.id)} onChange={() => toggleFilter(option.id)} /><span>{option.label}</span></label>)}<button className="save-filter" type="button" onClick={saveCurrentFilter} disabled={!selectedFilters.length}>＋ Lưu bộ lọc</button></div>
+        {savedFilters.length > 0 && <div className="saved-filters"><span className="preset-label">Đã lưu</span>{savedFilters.map((filter, index) => <button type="button" className="saved-filter" key={filter.join(",")} onClick={() => applySavedFilter(filter)}>Bộ lọc {index + 1} <span>↗</span></button>)}</div>}
         <div className="preset-row"><span className="preset-label">Preset hay dùng</span><button type="button" className={`preset ${weekdayPreset === "19:00" ? "preset-active" : ""}`} onClick={() => applyWeekdayPreset("19:00")}><span>🏸</span> Cầu lông · 18:00–19:00 <small>T2–T6</small></button><button type="button" className={`preset ${weekdayPreset === "20:00" ? "preset-active" : ""}`} onClick={() => applyWeekdayPreset("20:00")}><span>🏸</span> Cầu lông · 18:00–20:00 <small>T2–T6</small></button></div>
       </section>
 
@@ -175,7 +225,7 @@ export default function Home() {
             const isFavorite = favoriteIds.includes(court.id);
             return <article className="court-card" key={court.id}>
               <div className={`court-visual ${court.accent}`}><span className="sport-badge">{court.sport}</span><button className={`favorite ${isFavorite ? "is-favorite" : ""}`} onClick={() => toggleFavorite(court.id)} aria-label={isFavorite ? "Bỏ yêu thích" : "Thêm yêu thích"}>{isFavorite ? "♥" : "♡"}</button><div className="visual-lines" /><span className="visual-index">0{results.indexOf(court) + 1}</span></div>
-              <div className="court-content"><div className="court-title-row"><div><h3>{court.name}</h3><p className="address">{court.address}</p></div><span className="rating">★ {court.rating.toFixed(1)}</span></div><div className="court-meta"><span>◷ {court.open} – {court.close}</span><span>⌖ {court.distanceKm.toFixed(1)} km</span></div><div className="slot-row"><span className="slot-label">Còn trống</span>{court.available.filter((slot) => { if (!weekdayPreset) return true; const value = Number(slot.replace(":", "")); return value >= Number(time.replace(":", "")) && value <= Number(endTime.replace(":", "")); }).slice(0, 3).map((slot) => <button className={`slot ${slot === time ? "slot-selected" : ""}`} key={slot} onClick={() => setTime(slot)}>{slot}</button>)}<span className="more-slots">{weekdayPreset ? "T2–T6" : `+${Math.max(0, court.available.length - 3)}`}</span></div><button className="book-button" type="button">Xem lịch sân <span>↗</span></button></div>
+              <div className="court-content"><div className="court-title-row"><div><h3>{court.name}</h3><p className="address">{court.address}</p></div><span className="rating">★ {court.rating.toFixed(1)}</span></div><div className="court-meta"><span>◷ {court.open} – {court.close}</span><span>⌖ {court.distanceKm.toFixed(1)} km</span></div><div className="slot-row"><span className="slot-label">Còn trống</span>{court.available.filter((slot) => { if (!selectedFilters.some((item) => item.startsWith("time-"))) return true; const value = Number(slot.replace(":", "")); return value >= Number(time.replace(":", "")) && value <= Number(endTime.replace(":", "")); }).slice(0, 3).map((slot) => <button className={`slot ${slot === time ? "slot-selected" : ""}`} key={slot} onClick={() => setTime(slot)}>{slot}</button>)}<span className="more-slots">{weekdayPreset ? "T2–T6" : `+${Math.max(0, court.available.length - 3)}`}</span></div><button className="book-button" type="button">Xem lịch sân <span>↗</span></button></div>
             </article>;
           })}
         </div>
