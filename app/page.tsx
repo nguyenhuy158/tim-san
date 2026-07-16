@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import * as Select from "@radix-ui/react-select";
+import * as Slider from "@radix-ui/react-slider";
 
 type Court = {
   id: string;
@@ -217,7 +218,7 @@ export default function Home() {
           </label>
           <label className="field">
             <span>Bán kính tìm</span>
-            <div className="input-wrap"><span className="input-icon">◎</span><Dropdown value={radiusKm} onValueChange={setRadiusKm} options={["5", "10", "20", "50"]} labels={{ "5": "Trong 5 km", "10": "Trong 10 km", "20": "Trong 20 km", "50": "Trong 50 km" }} /></div>
+            <div className="input-wrap radius-control"><span className="input-icon">◎</span><Slider.Root className="radius-slider" value={[Number(radiusKm)]} min={1} max={50} step={1} onValueChange={([value]) => setRadiusKm(String(value))} aria-label="Bán kính tìm"><Slider.Track className="radius-track"><Slider.Range className="radius-range" /></Slider.Track><Slider.Thumb className="radius-thumb" aria-label="Bán kính tìm" /></Slider.Root><output className="radius-value">{radiusKm} km</output></div>
           </label>
           <label className="field">
             <span>Môn thể thao</span>
