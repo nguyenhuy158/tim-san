@@ -14,10 +14,10 @@ from fastapi.middleware.cors import CORSMiddleware
 UPSTREAM = "https://user-global.alobo.vn/v2/user/branch"
 
 COURTS = [
-    {"id": "usc-pickleball-binh-trung-dong", "name": "USC Pickleball Bình Trưng Đông", "sport": "Pickleball", "address": "Số 04 đường 51, phường Bình Trưng Đông, TP.HCM", "ward": "Bình Trưng Đông", "distanceKm": 1.8, "rating": 4.9, "open": "05:00", "close": "22:00", "available": ["06:00", "07:30", "09:00", "18:00", "19:30"]},
-    {"id": "clb-cau-long-dong-phuong", "name": "CLB Cầu Lông Đông Phương", "sport": "Cầu lông", "address": "873 đường số 47, phường Bình Trưng Đông, TP.HCM", "ward": "Bình Trưng Đông", "distanceKm": 2.2, "rating": 5, "open": "05:00", "close": "23:00", "available": ["05:30", "08:00", "10:30", "17:00", "20:00"]},
-    {"id": "nha-van-hoa-lao-dong", "name": "Sân Cầu Lông Nhà Văn hóa Lao động", "sport": "Cầu lông", "address": "245 Nguyễn Duy Trinh, phường Bình Trưng, TP.HCM", "ward": "Bình Trưng", "distanceKm": 2.7, "rating": 4.8, "open": "05:00", "close": "23:00", "available": ["06:30", "08:30", "14:00", "18:30", "21:00"]},
-    {"id": "the-kitchen-zone-pickleball", "name": "The Kitchen Zone - Pickleball", "sport": "Pickleball", "address": "32 Đồng Văn Cống, phường Bình Trưng Tây, TP.HCM", "ward": "Bình Trưng Tây", "distanceKm": 3.1, "rating": 5, "open": "06:00", "close": "24:00", "available": ["06:00", "09:00", "16:30", "19:00", "21:30"]},
+    {"id": "usc-pickleball-binh-trung-dong", "name": "USC Pickleball Bình Trưng Đông", "sport": "Pickleball", "address": "Số 04 đường 51, phường Bình Trưng Đông, TP.HCM", "ward": "Bình Trưng Đông", "distanceKm": 1.8, "rating": 4.9, "open": "05:00", "close": "22:00", "available": ["06:00", "07:30", "09:00", "18:00", "19:30"], "lat": 10.78972, "lng": 106.77885},
+    {"id": "clb-cau-long-dong-phuong", "name": "CLB Cầu Lông Đông Phương", "sport": "Cầu lông", "address": "873 đường số 47, phường Bình Trưng Đông, TP.HCM", "ward": "Bình Trưng Đông", "distanceKm": 2.2, "rating": 5, "open": "05:00", "close": "23:00", "available": ["05:30", "08:00", "10:30", "17:00", "20:00"], "lat": 10.79035, "lng": 106.77634},
+    {"id": "nha-van-hoa-lao-dong", "name": "Sân Cầu Lông Nhà Văn hóa Lao động", "sport": "Cầu lông", "address": "245 Nguyễn Duy Trinh, phường Bình Trưng, TP.HCM", "ward": "Bình Trưng", "distanceKm": 2.7, "rating": 4.8, "open": "05:00", "close": "23:00", "available": ["06:30", "08:30", "14:00", "18:30", "21:00"], "lat": 10.78551, "lng": 106.76812},
+    {"id": "the-kitchen-zone-pickleball", "name": "The Kitchen Zone - Pickleball", "sport": "Pickleball", "address": "32 Đồng Văn Cống, phường Bình Trưng Tây, TP.HCM", "ward": "Bình Trưng Tây", "distanceKm": 3.1, "rating": 5, "open": "06:00", "close": "24:00", "available": ["06:00", "09:00", "16:30", "19:00", "21:30"], "lat": 10.78187, "lng": 106.75973},
 ]
 
 app = FastAPI(title="tim-san API", version="0.1.0")

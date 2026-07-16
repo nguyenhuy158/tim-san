@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import * as Select from "@radix-ui/react-select";
 import * as Slider from "@radix-ui/react-slider";
 
@@ -16,6 +16,8 @@ type Court = {
   close: string;
   available: string[];
   accent: string;
+  lat: number;
+  lng: number;
 };
 
 const COURTS: Court[] = [
@@ -31,6 +33,8 @@ const COURTS: Court[] = [
     close: "22:00",
     available: ["06:00", "07:30", "09:00", "18:00", "19:30"],
     accent: "mint",
+    lat: 10.78972,
+    lng: 106.77885,
   },
   {
     id: "clb-cau-long-dong-phuong",
@@ -44,6 +48,8 @@ const COURTS: Court[] = [
     close: "23:00",
     available: ["05:30", "08:00", "10:30", "17:00", "20:00"],
     accent: "coral",
+    lat: 10.79035,
+    lng: 106.77634,
   },
   {
     id: "nha-van-hoa-lao-dong",
@@ -57,6 +63,8 @@ const COURTS: Court[] = [
     close: "23:00",
     available: ["06:30", "08:30", "14:00", "18:30", "21:00"],
     accent: "blue",
+    lat: 10.78551,
+    lng: 106.76812,
   },
   {
     id: "the-kitchen-zone-pickleball",
@@ -70,6 +78,8 @@ const COURTS: Court[] = [
     close: "24:00",
     available: ["06:00", "09:00", "16:30", "19:00", "21:30"],
     accent: "violet",
+    lat: 10.78187,
+    lng: 106.75973,
   },
 ];
 
@@ -94,6 +104,49 @@ function Dropdown({ value, onValueChange, options, labels }: { value: string; on
       </Select.Content>
     </Select.Portal>
   </Select.Root>;
+}
+
+function CourtMap({ court }: { court: Court }) {
+  const elementRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<{ remove: () => void; invalidateSize: () => void } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function renderMap() {
+      const L = await import("leaflet");
+      if (!elementRef.current || cancelled) return;
+      mapRef.current?.remove();
+
+      const map = L.map(elementRef.current, { scrollWheelZoom: false, zoomControl: false }).setView([court.lat, court.lng], 15);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap",
+        maxZoom: 19,
+      }).addTo(map);
+      L.control.zoom({ position: "bottomright" }).addTo(map);
+      L.marker([court.lat, court.lng], {
+        icon: L.divIcon({
+          className: "map-pin",
+          html: `<span>${court.sport === "Cầu lông" ? "CL" : "PB"}</span>`,
+          iconAnchor: [17, 17],
+          iconSize: [34, 34],
+        }),
+      }).addTo(map).bindPopup(court.name);
+
+      mapRef.current = map;
+      window.setTimeout(() => map.invalidateSize(), 0);
+    }
+
+    renderMap();
+
+    return () => {
+      cancelled = true;
+      mapRef.current?.remove();
+      mapRef.current = null;
+    };
+  }, [court]);
+
+  return <div className="court-map" ref={elementRef} aria-label={`Bản đồ đến ${court.name}`} />;
 }
 
 export default function Home() {
@@ -147,6 +200,8 @@ export default function Home() {
     const value = Number(slot.replace(":", ""));
     return value >= Number(time.replace(":", "")) && value <= Number(endTime.replace(":", ""));
   };
+
+  const getSlotCourtLabel = (court: Court, slot: string) => `Sân ${(court.available.indexOf(slot) % 4) + 1}`;
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -263,9 +318,10 @@ export default function Home() {
             const isFavorite = favoriteIds.includes(court.id);
             const visibleSlots = court.available.filter(slotMatchesRange);
             const isActive = activeCourtId === court.id;
+            const directionUrl = `https://www.google.com/maps/dir/?api=1&destination=${court.lat},${court.lng}&travelmode=driving`;
             return <article className={`court-card ${isActive ? "court-card-active" : ""}`} key={court.id} tabIndex={0} onClick={() => showCourtSchedule(court.id)} onKeyDown={(event) => openCourtFromKeyboard(event, court.id)} aria-label={`Xem lịch trống ${court.name}`}>
               <div className={`court-visual ${court.accent}`}><span className="sport-badge">{court.sport}</span><button className={`favorite ${isFavorite ? "is-favorite" : ""}`} onClick={(event) => { event.stopPropagation(); toggleFavorite(court.id); }} aria-label={isFavorite ? "Bỏ yêu thích" : "Thêm yêu thích"}>{isFavorite ? "♥" : "♡"}</button><div className="visual-lines" /><span className="visual-index">0{results.indexOf(court) + 1}</span></div>
-              <div className="court-content"><div className="court-title-row"><div><h3>{court.name}</h3><p className="address">{court.address}</p></div><span className="rating">★ {court.rating.toFixed(1)}</span></div><div className="court-meta"><span>◷ {court.open} – {court.close}</span><span>⌖ {court.distanceKm.toFixed(1)} km</span></div><div className="slot-row"><span className="slot-label">Còn trống</span>{visibleSlots.slice(0, 3).map((slot) => <button className={`slot ${slot === time ? "slot-selected" : ""}`} key={slot} onClick={(event) => { event.stopPropagation(); setTime(slot); setActiveCourtId(court.id); }}>{slot}</button>)}<span className="more-slots">{weekdayPreset ? "T2–T6" : `+${Math.max(0, visibleSlots.length - 3)}`}</span></div><button className="book-button" type="button" onClick={(event) => { event.stopPropagation(); showCourtSchedule(court.id); }}>{isActive ? "Ẩn lịch sân" : "Xem lịch sân"} <span>{isActive ? "⌃" : "⌄"}</span></button>{isActive && <div className="schedule-panel" aria-label={`Lịch trống ${court.name}`}><div className="schedule-head"><span>Lịch trống hôm nay</span><strong>{visibleSlots.length} khung giờ</strong></div><div className="schedule-slots">{visibleSlots.length ? visibleSlots.map((slot) => <button className={`schedule-slot ${slot === time ? "slot-selected" : ""}`} type="button" key={slot} onClick={(event) => { event.stopPropagation(); setTime(slot); setActiveCourtId(court.id); }}>{slot}</button>) : <span className="no-slot">Không có khung giờ khớp bộ lọc</span>}</div><a className="external-booking" href={`https://datlich.alobo.vn/san/${court.id}`} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Mở trang đặt sân <span>↗</span></a></div>}</div>
+              <div className="court-content"><div className="court-title-row"><div><h3>{court.name}</h3><p className="address">{court.address}</p></div><span className="rating">★ {court.rating.toFixed(1)}</span></div><div className="court-meta"><span>◷ {court.open} – {court.close}</span><span>⌖ {court.distanceKm.toFixed(1)} km</span></div><div className="slot-row"><span className="slot-label">Còn trống</span>{visibleSlots.slice(0, 3).map((slot) => <button className={`slot ${slot === time ? "slot-selected" : ""}`} key={slot} onClick={(event) => { event.stopPropagation(); setTime(slot); setActiveCourtId(court.id); }}><span className="slot-time">{slot}</span><span className="slot-court">{getSlotCourtLabel(court, slot)}</span></button>)}<span className="more-slots">{weekdayPreset ? "T2–T6" : `+${Math.max(0, visibleSlots.length - 3)}`}</span></div><button className="book-button" type="button" onClick={(event) => { event.stopPropagation(); showCourtSchedule(court.id); }}>{isActive ? "Ẩn lịch sân" : "Xem lịch sân"} <span>{isActive ? "⌃" : "⌄"}</span></button>{isActive && <div className="schedule-panel" aria-label={`Lịch trống ${court.name}`}><div className="schedule-head"><span>Lịch trống hôm nay</span><strong>{visibleSlots.length} khung giờ</strong></div><div className="schedule-slots">{visibleSlots.length ? visibleSlots.map((slot) => <button className={`schedule-slot ${slot === time ? "slot-selected" : ""}`} type="button" key={slot} onClick={(event) => { event.stopPropagation(); setTime(slot); setActiveCourtId(court.id); }}><span className="slot-time">{slot}</span><span className="slot-court">{getSlotCourtLabel(court, slot)}</span></button>) : <span className="no-slot">Không có khung giờ khớp bộ lọc</span>}</div><CourtMap court={court} /><div className="map-actions"><a className="external-booking" href={directionUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Chỉ đường <span>↗</span></a><a className="external-booking muted-link" href={`https://datlich.alobo.vn/san/${court.id}`} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Mở trang đặt sân <span>↗</span></a></div></div>}</div>
             </article>;
           })}
         </div>
