@@ -155,8 +155,7 @@ export default function Home() {
     if (!option) return;
     setSelectedFilters((current) => {
       const next = current.includes(id) ? current.filter((item) => item !== id) : [...current.filter((item) => FILTER_OPTIONS.find((filter) => filter.id === item)?.group !== option.group), id];
-      if (id === "badminton") setSport("Cầu lông");
-      if (id === "pickleball") setSport("Pickleball");
+      setSport(next.includes("badminton") ? "Cầu lông" : next.includes("pickleball") ? "Pickleball" : "Tất cả môn");
       if (id.startsWith("time-")) {
         setTime("18:00");
         setEndTime(id === "time-18-19" ? "19:00" : "20:00");
