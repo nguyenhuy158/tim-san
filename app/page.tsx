@@ -113,6 +113,7 @@ export default function Home() {
   const [searched, setSearched] = useState(true);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [apiResults, setApiResults] = useState<Court[] | null>(null);
+  const [activeCourtId, setActiveCourtId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!apiBase) return;
@@ -141,6 +142,12 @@ export default function Home() {
   }, [query, sport, radiusKm, time, endTime, selectedFilters]);
   const results = apiResults ?? localResults;
 
+  const slotMatchesRange = (slot: string) => {
+    if (!selectedFilters.some((item) => item.startsWith("time-"))) return true;
+    const value = Number(slot.replace(":", ""));
+    return value >= Number(time.replace(":", "")) && value <= Number(endTime.replace(":", ""));
+  };
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSearched(true);
@@ -148,6 +155,16 @@ export default function Home() {
 
   function toggleFavorite(id: string) {
     setFavoriteIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  }
+
+  function showCourtSchedule(id: string) {
+    setActiveCourtId((current) => current === id ? null : id);
+  }
+
+  function openCourtFromKeyboard(event: React.KeyboardEvent<HTMLElement>, id: string) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    showCourtSchedule(id);
   }
 
   function applyWeekdayPreset(nextEndTime: string) {
@@ -244,9 +261,11 @@ export default function Home() {
         <div className="result-grid">
           {results.map((court) => {
             const isFavorite = favoriteIds.includes(court.id);
-            return <article className="court-card" key={court.id}>
-              <div className={`court-visual ${court.accent}`}><span className="sport-badge">{court.sport}</span><button className={`favorite ${isFavorite ? "is-favorite" : ""}`} onClick={() => toggleFavorite(court.id)} aria-label={isFavorite ? "Bỏ yêu thích" : "Thêm yêu thích"}>{isFavorite ? "♥" : "♡"}</button><div className="visual-lines" /><span className="visual-index">0{results.indexOf(court) + 1}</span></div>
-              <div className="court-content"><div className="court-title-row"><div><h3>{court.name}</h3><p className="address">{court.address}</p></div><span className="rating">★ {court.rating.toFixed(1)}</span></div><div className="court-meta"><span>◷ {court.open} – {court.close}</span><span>⌖ {court.distanceKm.toFixed(1)} km</span></div><div className="slot-row"><span className="slot-label">Còn trống</span>{court.available.filter((slot) => { if (!selectedFilters.some((item) => item.startsWith("time-"))) return true; const value = Number(slot.replace(":", "")); return value >= Number(time.replace(":", "")) && value <= Number(endTime.replace(":", "")); }).slice(0, 3).map((slot) => <button className={`slot ${slot === time ? "slot-selected" : ""}`} key={slot} onClick={() => setTime(slot)}>{slot}</button>)}<span className="more-slots">{weekdayPreset ? "T2–T6" : `+${Math.max(0, court.available.length - 3)}`}</span></div><a className="book-button" href={`https://datlich.alobo.vn/san/${court.id}`} target="_blank" rel="noreferrer">Xem lịch sân <span>↗</span></a></div>
+            const visibleSlots = court.available.filter(slotMatchesRange);
+            const isActive = activeCourtId === court.id;
+            return <article className={`court-card ${isActive ? "court-card-active" : ""}`} key={court.id} tabIndex={0} onClick={() => showCourtSchedule(court.id)} onKeyDown={(event) => openCourtFromKeyboard(event, court.id)} aria-label={`Xem lịch trống ${court.name}`}>
+              <div className={`court-visual ${court.accent}`}><span className="sport-badge">{court.sport}</span><button className={`favorite ${isFavorite ? "is-favorite" : ""}`} onClick={(event) => { event.stopPropagation(); toggleFavorite(court.id); }} aria-label={isFavorite ? "Bỏ yêu thích" : "Thêm yêu thích"}>{isFavorite ? "♥" : "♡"}</button><div className="visual-lines" /><span className="visual-index">0{results.indexOf(court) + 1}</span></div>
+              <div className="court-content"><div className="court-title-row"><div><h3>{court.name}</h3><p className="address">{court.address}</p></div><span className="rating">★ {court.rating.toFixed(1)}</span></div><div className="court-meta"><span>◷ {court.open} – {court.close}</span><span>⌖ {court.distanceKm.toFixed(1)} km</span></div><div className="slot-row"><span className="slot-label">Còn trống</span>{visibleSlots.slice(0, 3).map((slot) => <button className={`slot ${slot === time ? "slot-selected" : ""}`} key={slot} onClick={(event) => { event.stopPropagation(); setTime(slot); setActiveCourtId(court.id); }}>{slot}</button>)}<span className="more-slots">{weekdayPreset ? "T2–T6" : `+${Math.max(0, visibleSlots.length - 3)}`}</span></div><button className="book-button" type="button" onClick={(event) => { event.stopPropagation(); showCourtSchedule(court.id); }}>{isActive ? "Ẩn lịch sân" : "Xem lịch sân"} <span>{isActive ? "⌃" : "⌄"}</span></button>{isActive && <div className="schedule-panel" aria-label={`Lịch trống ${court.name}`}><div className="schedule-head"><span>Lịch trống hôm nay</span><strong>{visibleSlots.length} khung giờ</strong></div><div className="schedule-slots">{visibleSlots.length ? visibleSlots.map((slot) => <button className={`schedule-slot ${slot === time ? "slot-selected" : ""}`} type="button" key={slot} onClick={(event) => { event.stopPropagation(); setTime(slot); setActiveCourtId(court.id); }}>{slot}</button>) : <span className="no-slot">Không có khung giờ khớp bộ lọc</span>}</div><a className="external-booking" href={`https://datlich.alobo.vn/san/${court.id}`} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Mở trang đặt sân <span>↗</span></a></div>}</div>
             </article>;
           })}
         </div>
