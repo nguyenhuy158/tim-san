@@ -32,6 +32,7 @@ async def health() -> dict[str, str]:
 @app.get("/api/search")
 async def search(
     q: str = Query("", alias="query"),
+    radius_km: float = Query(10, ge=1, le=100),
     sport: str = "",
     on: date | None = Query(None, alias="date"),
     start_time: str = "",
@@ -43,8 +44,9 @@ async def search(
         court for court in COURTS
         if (not normalized or normalized in f"{court['name']} {court['address']}".casefold())
         and (not sport or sport == "Tất cả môn" or court["sport"] == sport)
+        and court["distanceKm"] <= radius_km
     ]
-    return {"query": q, "date": str(on) if on else None, "startTime": start_time, "endTime": end_time, "count": len(matches), "results": matches, "source": "cache"}
+    return {"query": q, "date": str(on) if on else None, "radiusKm": radius_km, "startTime": start_time, "endTime": end_time, "count": len(matches), "results": matches, "source": "cache"}
 
 
 @app.get("/api/upstream/branch/{branch_id}/schedule")

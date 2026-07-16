@@ -83,6 +83,7 @@ const FILTER_OPTIONS = [
 export default function Home() {
   const [query, setQuery] = useState("Bình Trưng");
   const [date, setDate] = useState("2026-07-15");
+  const [radiusKm, setRadiusKm] = useState("10");
   const [sport, setSport] = useState("Tất cả môn");
   const [time, setTime] = useState("19:00");
   const [endTime, setEndTime] = useState("20:00");
@@ -99,18 +100,19 @@ export default function Home() {
 
   useEffect(() => {
     if (!apiBase) return;
-    const params = new URLSearchParams({ query, date, sport, start_time: time, end_time: endTime });
+    const params = new URLSearchParams({ query, date, radius_km: radiusKm, sport, start_time: time, end_time: endTime });
     fetch(`${apiBase}/api/search?${params}`)
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("API unavailable")))
       .then((payload: { results?: Court[] }) => setApiResults(payload.results ?? []))
       .catch(() => setApiResults(null));
-  }, [query, date, sport, time, endTime]);
+  }, [query, date, radiusKm, sport, time, endTime]);
 
   const localResults = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return COURTS.filter((court) => {
       const matchesQuery = !normalized || `${court.name} ${court.address}`.toLowerCase().includes(normalized);
       const matchesSport = sport === "Tất cả môn" || court.sport === sport;
+      const matchesRadius = court.distanceKm <= Number(radiusKm);
       const rangeSelected = selectedFilters.some((item) => item.startsWith("time-"));
       const start = Number(time.replace(":", ""));
       const end = Number(endTime.replace(":", ""));
@@ -118,9 +120,9 @@ export default function Home() {
         const value = Number(slot.replace(":", ""));
         return value >= start && value <= end;
       });
-      return matchesQuery && matchesSport && hasSlot;
+      return matchesQuery && matchesSport && matchesRadius && hasSlot;
     });
-  }, [query, sport, time, endTime, selectedFilters]);
+  }, [query, sport, radiusKm, time, endTime, selectedFilters]);
   const results = apiResults ?? localResults;
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -199,6 +201,10 @@ export default function Home() {
             <div className="input-wrap"><span className="input-icon">▣</span><input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></div>
           </label>
           <label className="field">
+            <span>Bán kính tìm</span>
+            <div className="input-wrap"><span className="input-icon">◎</span><select value={radiusKm} onChange={(event) => setRadiusKm(event.target.value)}><option value="5">Trong 5 km</option><option value="10">Trong 10 km</option><option value="20">Trong 20 km</option><option value="50">Trong 50 km</option></select></div>
+          </label>
+          <label className="field">
             <span>Môn thể thao</span>
             <div className="input-wrap"><span className="input-icon">◉</span><select value={sport} onChange={(event) => setSport(event.target.value)}><option>Tất cả môn</option><option>Pickleball</option><option>Cầu lông</option></select></div>
           </label>
@@ -216,7 +222,7 @@ export default function Home() {
 
       <section className="results-section">
         <div className="results-heading">
-          <div><p className="eyebrow">KẾT QUẢ GỢI Ý</p><h2>{searched ? `${results.length} sân quanh ${query || "bạn"}` : "Sân gần bạn"}</h2></div>
+          <div><p className="eyebrow">KẾT QUẢ GỢI Ý</p><h2>{searched ? `${results.length} sân trong ${radiusKm} km quanh ${query || "bạn"}` : "Sân gần bạn"}</h2></div>
           <button className="sort-button" type="button">Gần nhất <span>⌄</span></button>
         </div>
         <div className="result-grid">
