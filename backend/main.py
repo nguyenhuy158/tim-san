@@ -5,7 +5,7 @@ does not need to know the provider's request format or credentials.
 """
 
 from datetime import date
-from typing import Any
+from typing import Any, Optional
 
 import httpx
 from fastapi import FastAPI, Query
@@ -34,7 +34,7 @@ async def search(
     q: str = Query("", alias="query"),
     radius_km: float = Query(10, ge=1, le=100),
     sport: str = "",
-    on: date | None = Query(None, alias="date"),
+    on: Optional[date] = Query(None, alias="date"),
     start_time: str = "",
     end_time: str = "",
 ) -> dict[str, Any]:
