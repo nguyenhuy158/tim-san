@@ -16,6 +16,14 @@ npm run dev
 npm run build
 ```
 
+Chạy cả frontend và backend bằng một lệnh:
+
+```bash
+make dev-all
+```
+
+Frontend mở ở `http://localhost:3000`, backend ở `http://localhost:8000`.
+
 ## Backend Python
 
 ```bash
@@ -107,9 +115,10 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 
 ## Useful Commands
 
-- `npm run dev`: start local development
+- `make dev-all`: start frontend and backend together
+- `npm run dev`: start local frontend only
 - `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
+- `npm test`: build and verify the finder page
 - `npm run db:generate`: generate Drizzle migrations after schema changes
 
 ## Learn More
